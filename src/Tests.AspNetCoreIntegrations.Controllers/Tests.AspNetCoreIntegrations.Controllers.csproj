@@ -4,10 +4,19 @@
     
     <PropertyGroup>
         <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+        <FilteredProjectReferences>@(GenerateControllersForAssembly)</FilteredProjectReferences>
     </PropertyGroup>
 
     <ItemGroup Label="Analyzers and source generators">
-        <ProjectReference Include="..\SourceGenerators.AspNetCoreIntegrations.Controllers\SourceGenerators.AspNetCoreIntegrations.Controllers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
         <ProjectReference Include="..\Tests.Commands\Tests.Commands.csproj" />
+        <ProjectReference Include="..\SourceGenerators.AspNetCoreIntegrations.Controllers\SourceGenerators.AspNetCoreIntegrations.Controllers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    </ItemGroup>
+    
+<!--    <ItemGroup>-->
+<!--        <GenerateControllersForAssembly Include="IOKode.OpinionatedFramework.Tests.Commands" />-->
+<!--    </ItemGroup>-->
+    
+    <ItemGroup>
+        <CompilerVisibleProperty Include="FilteredProjectReferences" />
     </ItemGroup>
 </Project>

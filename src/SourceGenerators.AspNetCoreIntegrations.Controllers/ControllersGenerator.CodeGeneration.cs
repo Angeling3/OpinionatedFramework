@@ -37,40 +37,44 @@ internal partial class ControllersGenerator
         public string ControllerClassName => $"{Name}Controller";
     }
     
-    private static IEnumerable<_Command> _GetCommands(Compilation compilation, ClassDeclarationSyntax manifestClassDeclarationSyntax, CancellationToken cancellationToken)
+    private static IEnumerable<_Command> _GetControllers(Compilation compilation, IEnumerable<ClassDeclarationSyntax> commandsClassDeclarationSyntax, HashSet<string> referencedAssemblies, CancellationToken cancellationToken)
     {
-        var semanticModel = compilation. GetSemanticModel(manifestClassDeclarationSyntax.SyntaxTree);
-        // var manifestClassSymbol = (INamedTypeSymbol) semanticModel.GetDeclaredSymbol(manifestClassDeclarationSyntax)!;
+        var controllers = _GetControllersFromCompilationContext(compilation, commandsClassDeclarationSyntax, cancellationToken);
+        return controllers;
+    }
 
-        var classSymbols = compilation.SyntaxTrees
-            .Select(tree => tree.GetRoot())
-            .SelectMany(rootNode => rootNode
-                .DescendantNodes()
-                .OfType<ClassDeclarationSyntax>()
-                .Select(classSyntax => (INamedTypeSymbol) semanticModel.GetDeclaredSymbol(classSyntax)!));
-        
-        var controllers = classSymbols
-            .Where(classSymbol => classSymbol.Interfaces.Any(@interface => @interface.Name == "ICommandController"))
-            .Select(classSymbol => new _Command
+    private static IEnumerable<_Command> _GetControllersFromCompilationContext(Compilation compilation, IEnumerable<ClassDeclarationSyntax> controllersClassDeclarationSyntax, CancellationToken cancellationToken)
+    {
+        foreach (var controllerClassSyntax in controllersClassDeclarationSyntax)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            
+            var semanticModel = compilation.GetSemanticModel(controllerClassSyntax.SyntaxTree);
+            // var manifestClassSymbol = (INamedTypeSymbol) semanticModel.GetDeclaredSymbol(manifestClassDeclarationSyntax)!;
+
+            var classSymbol = (INamedTypeSymbol) semanticModel.GetDeclaredSymbol(controllerClassSyntax)!;
+
+            var controller = new _Command
             {
                 ClassName = classSymbol.Name,
                 ClassNamespace = _GetNamespace(classSymbol),
                 HttpMethod = _GetHttpMethod(classSymbol),
                 ControllerRoute = _GetControllerRoute(classSymbol)
-           });
+            };
 
-        // var controllers = new[]
-        // {
-        //     new _Command
-        //     {
-        //         ClassName = "TestCommand",
-        //         ClassNamespace = "Namespace.Test",
-        //         HttpMethod = "HttpGet",
-        //         ControllerRoute = "test"
-        //     }
-        // };
-        
-        return controllers;
+            // var controllers = new[]
+            // {
+            //     new _Command
+            //     {
+            //         ClassName = "TestCommand",
+            //         ClassNamespace = "Namespace.Test",
+            //         HttpMethod = "HttpGet",
+            //         ControllerRoute = "test"
+            //     }
+            // };
+            
+            yield return controller;
+        }
     }
 
     private static string _GetNamespace(INamedTypeSymbol symbol)

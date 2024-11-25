@@ -1,6 +1,8 @@
+using IOKode.OpinionatedFramework.Commands;
+
 namespace Controllers;
 
-public interface ICommandController
+public interface ICommandController<TCommand> where TCommand : Command
 {
-    public void GetRoute();
+    public void Execute(TCommand command);
 }

@@ -5,7 +5,7 @@ namespace IOKode.OpinionatedFramework.Tests.AspNetCoreIntegrations.Controllers;
 
 public class Test
 {
-    void main()
+    void main() 
     {
         ControllerGeneratorConfig.CommandResolutor = delegate ()
         {

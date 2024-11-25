@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
@@ -12,13 +13,20 @@ internal partial class ControllersGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-// #if SHOULD_ATTACH_DEBUGGER
+#if SHOULD_ATTACH_DEBUGGER
             if (!System.Diagnostics.Debugger.IsAttached)
             {
                 System.Diagnostics.Debugger.Launch();
             }
-// #endif
+#endif
 
+        var s = context. AnalyzerConfigOptionsProvider.Select((options, _) =>
+        {
+            options.GlobalOptions.TryGetValue("build_property.FilteredProjectReferences", out var value);
+            var references = new HashSet<string>();
+            references.Add(value);
+            return references;
+        });
         var manifestDeclarations = context.SyntaxProvider
             .CreateSyntaxProvider
             (
@@ -27,20 +35,20 @@ internal partial class ControllersGenerator : IIncrementalGenerator
             )
             .Where(static declarationSyntax => declarationSyntax is not null);
 
-        IncrementalValueProvider<(Compilation Compilation, ImmutableArray<ClassDeclarationSyntax> Declarations)>
+        IncrementalValueProvider<((Compilation Compilation, ImmutableArray<ClassDeclarationSyntax> Declarations), HashSet<string> Options)>
             compilationAndClasses =
-                context.CompilationProvider.Combine(manifestDeclarations.Collect());
+                context.CompilationProvider.Combine(manifestDeclarations.Collect()).Combine(s);
 
         context.RegisterSourceOutput(compilationAndClasses, static (sourceProductionContext, source) =>
-            Execute(source.Compilation, source.Declarations.FirstOrDefault(), sourceProductionContext));
+            Execute(source.Item1.Compilation, source.Item1.Declarations, source.Options, sourceProductionContext));
     }
     
     /// <summary>
     /// Generate the files with the generated code and adds them to the context.
     /// </summary>
-    private static void Execute(Compilation compilation, ClassDeclarationSyntax manifestClassDeclarationSyntax, SourceProductionContext context)
+    private static void Execute(Compilation compilation, IEnumerable<ClassDeclarationSyntax> manifestClassDeclarationSyntax, HashSet<string> options, SourceProductionContext context)
     {
-        var commands = _GetCommands(compilation, manifestClassDeclarationSyntax, context.CancellationToken)
+        var commands = _GetControllers(compilation, manifestClassDeclarationSyntax, options, context.CancellationToken)
             .ToList();
 
         if (commands.Count <= 0)
@@ -68,17 +76,17 @@ internal partial class ControllersGenerator : IIncrementalGenerator
     /// </summary>
     private static ClassDeclarationSyntax _GetSemanticTargetForGeneration(GeneratorSyntaxContext context)
     {
-        var manifestClassDeclarationSyntax = (ClassDeclarationSyntax) context.Node;
+        var controllerClassDeclarationSyntax = (ClassDeclarationSyntax) context.Node;
 
-        var manifestClassSymbol = (INamedTypeSymbol) context.SemanticModel.GetDeclaredSymbol(manifestClassDeclarationSyntax)!;
+        var controllerClassSymbol = (INamedTypeSymbol) context.SemanticModel.GetDeclaredSymbol(controllerClassDeclarationSyntax)!;
 
-        var hasInterface = manifestClassSymbol.Interfaces
-            .Any(interfaceSymbol => interfaceSymbol.Name is "ICommandControllersManifest" or "ICommandController"); // todo ensure correct name
+        var hasInterface = controllerClassSymbol.Interfaces
+            .Any(interfaceSymbol => interfaceSymbol.Name.StartsWith("ICommandController")); // todo ensure correct name
         if (!hasInterface)
         {
             return null;
         }
 
-        return manifestClassDeclarationSyntax;
+        return controllerClassDeclarationSyntax;
     }
 }

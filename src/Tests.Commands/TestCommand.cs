@@ -2,9 +2,9 @@
 using Controllers;
 using IOKode.OpinionatedFramework.Commands;
 
-namespace IOKode.OpinionatedFramework.Tests.AspNetCoreIntegrations.Controllers;
+namespace IOKode.OpinionatedFramework.Tests.Commands;
 
-public class GetTestCommand : Command
+public class TestCommand : Command
 {
     protected override Task ExecuteAsync(ICommandContext context)
     {
@@ -13,6 +13,6 @@ public class GetTestCommand : Command
 
     public void GetRoute()
     {
-        throw new System.NotImplementedException(); 
+        throw new System.NotImplementedException();
     }
 }
